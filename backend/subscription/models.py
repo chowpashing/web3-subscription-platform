@@ -1,6 +1,6 @@
 from django.db import models
-from user.models import User
-from botmanage.models import BotManagement
+from django.contrib.auth.models import User
+from botmanagement.models import BotManagement
 
 class Subscription(models.Model):
     STATUS_CHOICES = [
@@ -18,6 +18,7 @@ class Subscription(models.Model):
     expiration_date = models.DateTimeField()
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     active = models.BooleanField(default=False)  # Whether the bot is currently active
+    trial_period_days = models.IntegerField(default=0)
 
     def __str__(self):
         return f"Subscription {self.id} - {self.user.email} - {self.bot.name}"

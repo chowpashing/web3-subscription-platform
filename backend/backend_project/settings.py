@@ -10,11 +10,15 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import os
 from pathlib import Path
+import logging
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Configure the logger
+logger = logging.getLogger(__name__)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -37,16 +41,52 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'corsheaders',
+    # 'bots', # Commenting out as it seems to be a typo or unused
+    'subscription', # 添加 subscription 应用
+    'user',
+    'rest_framework_simplejwt.token_blacklist',
+    'botmanagement',  # 添加这一行
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # 添加CORS中间件，必须在CommonMiddleware之前
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+# CORS设置
+CORS_ALLOW_ALL_ORIGINS = True  # 在开发环境中允许所有源
+# 生产环境中应该设置具体的白名单
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:5173",
+#     "http://localhost:5174",
+# ]
+CORS_ALLOW_CREDENTIALS = True
+
+# REST Framework设置
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+# Simple JWT 设置
+SIMPLE_JWT = {
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+}
+
+# 添加自定义认证后端
+AUTHENTICATION_BACKENDS = [
+    'user.auth.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
 ROOT_URLCONF = 'backend_project.urls'
@@ -121,3 +161,59 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Web3 设置
+WEB3_SETTINGS = {
+    'INFURA_PROJECT_ID': '161ab53b248d4a039e6e6d31908a988b',  # 硬编码的 Infura Project ID
+    'NETWORK': 'sepolia',  # use Sepolia test net
+    'CHAIN_ID': 11155111,  # Sepolia's ID
+    'NETWORK_NAME': 'Sepolia Test Network'  # Blockchain ID
+}
+
+# IPFS 设置
+IPFS_NODE_URL = 'http://localhost:5001'  # IPFS节点地址
+IPFS_GATEWAY_URL = 'https://ipfs.io'  # IPFS网关地址
+
+# Web3 配置
+WEB3_PROVIDER_URL = 'https://sepolia.infura.io/v3/161ab53b248d4a039e6e6d31908a988b'  # 硬编码的 Web3 提供者 URL
+BOT_REGISTRY_CONTRACT_ADDRESS = '0x9f19C95Ea0d53abc6752E0a99200BD716D17b4f3'
+BOT_SUBSCRIPTION_CONTRACT_ADDRESS = '0x949B2C0c384A1Cd2598Bd38B456D87a034B2C152'
+BOT_PAYMENT_CONTRACT_ADDRESS = '0x34f67765ffAE9633eE7eA6eD89CcaFB910a08777'
+USDT_CONTRACT_ADDRESS = '0x79C1433c99E6D3CBD8fcdD6957315b8Ed198aDcf'
+
+# 确保设置了 Web3 提供者
+if not WEB3_PROVIDER_URL or WEB3_PROVIDER_URL == 'https://sepolia.infura.io/v3/your-infura-key':
+    logger.warning("未设置 Web3 提供者 URL，区块链功能将不可用")
+
+# 配置日志
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
+
+# Pinata API 配置
+PINATA_API_KEY = os.getenv('PINATA_API_KEY', '')
+PINATA_SECRET_KEY = os.getenv('PINATA_SECRET_KEY', '')
+PINATA_JWT = os.getenv('PINATA_JWT', '')
+
+# 确保设置了 Pinata API 凭证
+if not PINATA_JWT:
+    logger.warning("未设置 Pinata JWT，IPFS 上传功能将不可用")
+else:
+    logger.info("Pinata JWT 已成功加载")
