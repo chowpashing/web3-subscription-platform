@@ -1,5 +1,6 @@
+from django.shortcuts import render
+
 # Create your views here.
-# user/views.py
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import update_last_login
 from django.core.exceptions import ObjectDoesNotExist
