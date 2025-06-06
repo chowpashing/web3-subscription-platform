@@ -1,0 +1,244 @@
+.container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.header h1 {
+  font-size: 1.8rem;
+  color: #333;
+  margin: 0;
+}
+
+.headerButtons {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.userManagementButton {
+  padding: 0.75rem 1.5rem;
+  border: 2px solid #4a90e2;
+  background-color: white;
+  color: #4a90e2;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.userManagementButton:hover {
+  background-color: #4a90e2;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.addButton {
+  padding: 0.75rem 1.5rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.addButton:hover {
+  background-color: #357abd;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.formOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.formContainer {
+  position: relative;
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.closeButton {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #666;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.error {
+  color: #dc3545;
+  background-color: #f8d7da;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .headerButtons {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .userManagementButton,
+  .addButton {
+    width: 100%;
+  }
+
+  .formContainer {
+    width: 95%;
+    padding: 1rem;
+  }
+}
+
+.managementHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.userManagementButton,
+.toggleFormButton {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.userManagementButton {
+  background-color: #4a90e2;
+  color: white;
+}
+
+.userManagementButton:hover {
+  background-color: #357abd;
+}
+
+.toggleFormButton {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.toggleFormButton:hover {
+  background-color: #27ae60;
+}
+
+.toggleFormButton.active {
+  background-color: #e74c3c;
+}
+
+.toggleFormButton.active:hover {
+  background-color: #c0392b;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.botName {
+  font-size: 1.2rem;
+  color: #333;
+  font-weight: 500;
+}
+
+.botStatus {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+}
+
+.statusActive {
+  background-color: #27ae60;
+  color: white;
+}
+
+.statusInactive {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.cardContent {
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.cardActions {
+  display: flex;
+  gap: 1rem;
+}
+
+.actionButton {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.actionButton:hover {
+  background-color: #f5f5f5;
+  border-color: #999;
+}
+
+.grid {
+  grid-template-columns: 1fr;
+}

@@ -1,0 +1,48 @@
+.botList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  padding: 20px 0;
+}
+
+.botCard {
+  height: 100%;
+}
+
+.botInfo {
+  margin-bottom: 16px;
+}
+
+.botInfo h3 {
+  margin-bottom: 8px;
+  font-size: 18px;
+}
+
+.botInfo p {
+  margin-bottom: 8px;
+  color: #666;
+}
+
+.botDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 14px;
+  color: #666;
+}
+
+.botDetails span {
+  display: block;
+}
+
+.botActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.price {
+  color: #1890ff;
+  font-weight: 500;
+} 

@@ -1,0 +1,19 @@
+/* App组件样式 */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 主要内容区域样式 */
+.main-content {
+  flex: 1;
+  padding: 24px 0;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 12px;
+  }
+}
