@@ -19,6 +19,7 @@ from django.core.mail import send_mail
 import random
 from datetime import datetime, timedelta
 from django.utils import timezone
+from siwe import SiweMessage
 
 
 # 注册视图
@@ -64,135 +65,28 @@ def verify_signature(wallet_address, message, signature):
         print(f"Message to verify: {message}")
         print(f"Signature received: {signature}")
         
-        try:
-            # 检查消息是否符合SIWE格式（EIP-4361标准）
-            if message.startswith("localhost") or message.startswith("127.0.0.1") or "wants you to sign in with your Ethereum account" in message:
-                print("Detected SIWE message format")
-                # 解析SIWE消息
-                return verify_siwe_message(wallet_address, message, signature)
-            else:
-                # 处理传统消息格式
-                # 创建可签名消息
-                message_hash = encode_defunct(text=message)
-                print(f"Created message hash: {message_hash}")
-                
-                # 使用eth_account库直接在本地验证签名
-                from eth_account import Account
-                
-                # 尝试恢复地址
-                recovered_address = Account.recover_message(
-                    message_hash,
-                    signature=signature
-                )
-                
-                print(f"Recovered address: {recovered_address}")
-                print(f"Original wallet address: {wallet_address}")
-                print(f"Comparison result: {recovered_address.lower() == wallet_address.lower()}")
-                
-                return recovered_address.lower() == wallet_address.lower()
-        except Exception as e:
-            print(f"Recovery error: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            return False
-            
-    except Exception as e:
-        print(f"Signature verification error: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return False
-
-# 验证SIWE消息（Sign-In with Ethereum，EIP-4361标准）
-def verify_siwe_message(wallet_address, message, signature):
-    try:
-        # 解析SIWE消息
-        # SIWE消息格式示例：
-        # example.com wants you to sign in with your Ethereum account:
-        # 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
-        # 
-        # I accept the ServiceOrg Terms of Service: https://service.org/tos
-        # 
-        # URI: https://service.org/login
-        # Version: 1
-        # Chain ID: 1
-        # Nonce: 32891756
-        # Issued At: 2021-09-30T16:25:24Z
-        # Resources:
-        # - ipfs://bafybeiemxf5abjwjbikoz4mc3a3dla6ual3jsgpdr4cjr3oz3evfyavhwq/
-        # - https://example.com/my-web2-claim.json
-        
-        lines = message.strip().split('\n')
-        
-        # 提取域名和地址
-        domain = lines[0].split(' wants you to sign in with your Ethereum account:')[0].strip()
-        address_line = lines[1].strip()
-        
-        # 提取其他字段
-        version = None
-        chain_id = None
-        nonce = None
-        issued_at = None
-        expiration_time = None
-        
-        for line in lines[2:]:
-            line = line.strip()
-            if line.startswith('Version:'):
-                version = line.split('Version:')[1].strip()
-            elif line.startswith('Chain ID:'):
-                chain_id = line.split('Chain ID:')[1].strip()
-            elif line.startswith('Nonce:'):
-                nonce = line.split('Nonce:')[1].strip()
-            elif line.startswith('Issued At:'):
-                issued_at = line.split('Issued At:')[1].strip()
-            elif line.startswith('Expiration Time:'):
-                expiration_time = line.split('Expiration Time:')[1].strip()
-        
-        print(f"SIWE Message Details:")
-        print(f"Domain: {domain}")
-        print(f"Address: {address_line}")
-        print(f"Version: {version}")
-        print(f"Chain ID: {chain_id}")
-        print(f"Nonce: {nonce}")
-        print(f"Issued At: {issued_at}")
-        print(f"Expiration Time: {expiration_time}")
-        
-        # 验证地址是否匹配
-        if address_line.lower() != wallet_address.lower():
-            print(f"Address mismatch: {address_line} != {wallet_address}")
-            return False
-        
-        # 验证过期时间
-        if expiration_time:
-            from datetime import datetime
-            import pytz
-            current_time = datetime.now(pytz.UTC)
-            expiration = datetime.fromisoformat(expiration_time.replace('Z', '+00:00'))
-            if current_time > expiration:
-                print(f"Message expired at {expiration_time}")
-                return False
-        
-        # 创建可签名消息并验证签名
+        # 创建可签名消息
         message_hash = encode_defunct(text=message)
+        print(f"Created message hash: {message_hash}")
         
-        # 使用eth_account库直接在本地验证签名
+        # 使用eth_account库验证签名
         from eth_account import Account
-        
         recovered_address = Account.recover_message(
             message_hash,
             signature=signature
         )
         
-        print(f"Recovered address from SIWE: {recovered_address}")
+        print(f"Recovered address: {recovered_address}")
         print(f"Original wallet address: {wallet_address}")
         print(f"Comparison result: {recovered_address.lower() == wallet_address.lower()}")
         
         return recovered_address.lower() == wallet_address.lower()
+            
     except Exception as e:
-        print(f"SIWE verification error: {str(e)}")
-        import traceback
+        print(f"Signature verification error: {str(e)}")
         traceback.print_exc()
         return False
-    
+
 # Web3 钱包登录
 class Web3LoginView(APIView):
     def post(self, request):
@@ -201,29 +95,26 @@ class Web3LoginView(APIView):
             signature = request.data.get("signature")
             message = request.data.get("message")
 
-            if not wallet_address or not signature:
+            if not wallet_address or not signature or not message:
                 return Response(
-                    {"error": "Wallet address and signature are required"}, 
+                    {"error": "Wallet address, signature and message are required"}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
-
-            if not message:
-                message = f"Sign this message to log in: {wallet_address}"
 
             print(f"Received login request:")
             print(f"Wallet: {wallet_address}")
             print(f"Message: {message}")
             print(f"Signature: {signature}")
 
+            # 验证签名
             if not verify_signature(wallet_address, message, signature):
                 return Response(
-                    {"error": "Invalid signature"}, 
+                    {"error": "Invalid signature or message"}, 
                     status=status.HTTP_401_UNAUTHORIZED
                 )
 
             # 查找具有此钱包地址的用户资料
             import json
-            # 构造包含钱包地址的JSON字符串模式
             wallet_json_pattern = f'"{wallet_address}": true'
             profile = UserProfile.objects.filter(wallets__contains=wallet_json_pattern).first()
             
@@ -245,7 +136,6 @@ class Web3LoginView(APIView):
                 
         except Exception as e:
             print(f"Error in Web3LoginView: {e}")
-            import traceback
             traceback.print_exc()
             return Response(
                 {"error": "An error occurred during login"}, 

@@ -2,7 +2,8 @@ from rest_framework import serializers
 from .models import Subscription
 
 class SubscriptionSerializer(serializers.ModelSerializer):
-    trial_period_days = serializers.IntegerField(read_only=True)
+    trial_period_hours = serializers.IntegerField(read_only=True)
+    contract_bot_id = serializers.IntegerField(source='bot.contract_bot_id', read_only=True)
 
     class Meta:
         model = Subscription
@@ -10,6 +11,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             'id',
             'user',
             'bot',
+            'contract_bot_id',
             'payment_time',
             'payment_amount',
             'currency',
@@ -17,5 +19,5 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             'expiration_date',
             'status',
             'active',
-            'trial_period_days'
+            'trial_period_hours'
         ] 

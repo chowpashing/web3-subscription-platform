@@ -9,6 +9,7 @@ from .serializers import SubscriptionSerializer
 from django.utils import timezone
 from datetime import timedelta
 from django.utils.dateformat import DateFormat
+from django.utils.timezone import localtime
 
 # Create your views here.
 
@@ -27,8 +28,8 @@ class SubscriptionCreateView(APIView):
         serializer = SubscriptionSerializer(data=data)
         if serializer.is_valid():
             sub = serializer.save()
-            # 从关联的 bot 中获取 trial_time 并赋值给 subscription 的 trial_period_days
-            sub.trial_period_days = bot.trial_time
+            # 从关联的 bot 中获取 trial_time 并赋值给 subscription 的 trial_period_hours
+            sub.trial_period_hours = bot.trial_time
             sub.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -55,18 +56,56 @@ class UserSubscriptionStatusView(APIView):
                 subscription.active = False
                 subscription.save()
             elif subscription.active:
-                trial_end_time = subscription.payment_time + timedelta(days=subscription.trial_period_days)
-                if subscription.trial_period_days > 0 and now < trial_end_time:
+                trial_end_time = subscription.payment_time + timedelta(hours=subscription.trial_period_hours)
+                if subscription.trial_period_hours > 0 and now < trial_end_time:
                     data['status_description'] = 'trial'
-                    formatted_time = DateFormat(trial_end_time).format('Y-m-d H:i')
-                    data['message'] = f'Before {formatted_time}, you can'
+                    data['message'] = f'Before {trial_end_time.isoformat()}, you can'
                     data['cancel_subscription_url'] = '/api/subscription/cancel'
                 else:
                     data['status_description'] = 'subscribed'
                     data['message'] = 'You are currently subscribed.'
             else:
                 data['status_description'] = 'cancelled_not_expired'
-                data['message'] = 'Your subscription has been cancelled, but it will remain active until its expiration date.'
+                data['message'] = 'Your subscription has been cancelled.'
+            # 直接返回原始 UTC 时间
+            data['payment_time'] = subscription.payment_time
+            data['expiration_date'] = subscription.expiration_date
             result.append(data)
 
         return Response(result, status=status.HTTP_200_OK)
+
+class SetInactiveSubscriptionView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        transaction_hash = request.data.get('transaction_hash')
+        if not transaction_hash:
+            return Response({'error': 'transaction_hash is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            subscription = Subscription.objects.filter(
+                user=user, 
+                transaction_hash=transaction_hash,
+                active=True
+            ).first()
+            
+            if not subscription:
+                return Response(
+                    {'error': 'Active subscription not found with the given transaction hash'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            subscription.active = False
+            subscription.save()
+            
+            return Response(
+                {'success': True, 'message': 'Subscription set to inactive.'}, 
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to update subscription status: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

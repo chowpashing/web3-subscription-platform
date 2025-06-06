@@ -18,7 +18,7 @@ class Subscription(models.Model):
     expiration_date = models.DateTimeField()
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     active = models.BooleanField(default=False)  # Whether the bot is currently active
-    trial_period_days = models.IntegerField(default=0)
+    trial_period_hours = models.IntegerField(default=0)
 
     def __str__(self):
         return f"Subscription {self.id} - {self.user.email} - {self.bot.name}"

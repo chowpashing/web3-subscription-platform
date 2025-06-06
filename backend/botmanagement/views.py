@@ -195,7 +195,7 @@ class BotViewSet(viewsets.ModelViewSet):
             bot_data = {
                 'ipfsHash': instance.ipfs_hash,
                 'price': str(int(float(instance.price) * 10**6)),  # 转换为USDT的最小单位（6位小数）
-                'trialTime': instance.trial_time,
+                'trialTime': instance.trial_time * 24,  # 将天数转换为小时
                 'name': instance.name,
                 'description': instance.description
             }
