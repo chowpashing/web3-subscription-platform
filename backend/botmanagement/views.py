@@ -13,12 +13,17 @@ from django.conf import settings
 from .permissions import IsAuthenticated
 import json
 import os
+from eth_account import Account
 
 logger = logging.getLogger(__name__)
 
-# 在文件开头添加
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BOT_REGISTRY_ABI_PATH = os.path.join(BASE_DIR, '..', 'blockchain', 'artifacts', 'contracts', 'BotRegistry.sol', 'BotRegistry.json')
+# 获取项目根目录
+BASE_DIR = settings.BASE_DIR
+
+# 合约 ABI 文件路径
+BOT_REGISTRY_ABI_PATH = os.path.join(BASE_DIR.parent, 'blockchain', 'artifacts', 'contracts', 'NewRegistry.sol', 'NewRegistry.json')
+BOT_SUBSCRIPTION_ABI_PATH = os.path.join(BASE_DIR.parent, 'blockchain', 'artifacts', 'contracts', 'NewSubscription.sol', 'NewSubscription.json')
+BOT_PAYMENT_ABI_PATH = os.path.join(BASE_DIR.parent, 'blockchain', 'artifacts', 'contracts', 'NewBotPayment.sol', 'NewBotPayment.json')
 
 # 初始化 Web3
 w3 = Web3(Web3.HTTPProvider(settings.WEB3_PROVIDER_URL))
@@ -27,10 +32,26 @@ w3 = Web3(Web3.HTTPProvider(settings.WEB3_PROVIDER_URL))
 with open(BOT_REGISTRY_ABI_PATH) as f:
     BOT_REGISTRY_ABI = json.load(f)['abi']
 
+with open(BOT_SUBSCRIPTION_ABI_PATH) as f:
+    BOT_SUBSCRIPTION_ABI = json.load(f)['abi']
+
+with open(BOT_PAYMENT_ABI_PATH) as f:
+    BOT_PAYMENT_ABI = json.load(f)['abi']
+
 # 创建合约实例
 bot_registry_contract = w3.eth.contract(
     address=settings.BOT_REGISTRY_CONTRACT_ADDRESS,
     abi=BOT_REGISTRY_ABI
+)
+
+bot_subscription_contract = w3.eth.contract(
+    address=settings.BOT_SUBSCRIPTION_CONTRACT_ADDRESS,
+    abi=BOT_SUBSCRIPTION_ABI
+)
+
+bot_payment_contract = w3.eth.contract(
+    address=settings.BOT_PAYMENT_CONTRACT_ADDRESS,
+    abi=BOT_PAYMENT_ABI
 )
 
 class BotViewSet(viewsets.ModelViewSet):
@@ -196,8 +217,7 @@ class BotViewSet(viewsets.ModelViewSet):
                 'ipfsHash': instance.ipfs_hash,
                 'price': str(int(float(instance.price) * 10**6)),  # 转换为USDT的最小单位（6位小数）
                 'trialTime': instance.trial_time * 24,  # 将天数转换为小时
-                'name': instance.name,
-                'description': instance.description
+                'name': instance.name
             }
             
             # 3. 返回需要签名的数据
@@ -224,6 +244,7 @@ class BotViewSet(viewsets.ModelViewSet):
             transaction_hash = request.data.get('transactionHash')
             
             logger.info(f"开始处理confirm_publish请求，Bot ID: {pk}, Transaction Hash: {transaction_hash}")
+            logger.info(f"区块浏览器链接: https://sepolia-optimism.etherscan.io/tx/{transaction_hash}")
             
             if not transaction_hash:
                 logger.error("请求中缺少transactionHash")
@@ -279,6 +300,9 @@ class BotViewSet(viewsets.ModelViewSet):
                 logger.info(f"开始验证机器人 {pk} 的注册状态")
                 logger.info(f"合约地址: {settings.BOT_REGISTRY_CONTRACT_ADDRESS}")
                 
+                # BotRegistered 事件的签名 (移除0x前缀)
+                BOT_REGISTERED_EVENT_SIGNATURE = '07f53422aaa7cc2086d6ad8d6d84bb20a120b5e3c78373124c7d04477836d696'
+                
                 # 从交易日志中获取机器人ID
                 bot_id = None
                 logger.info(f"交易日志数量: {len(tx_receipt.logs)}")
@@ -287,13 +311,22 @@ class BotViewSet(viewsets.ModelViewSet):
                     logger.info(f"日志地址: {log.address}")
                     logger.info(f"日志主题: {log.topics}")
                     
+                    # 添加详细的调试日志
+                    logger.info(f"合约地址比较: {log.address.lower()} == {settings.BOT_REGISTRY_CONTRACT_ADDRESS.lower()}")
+                    logger.info(f"事件签名比较: {log.topics[0].hex().replace('0x', '')} == {BOT_REGISTERED_EVENT_SIGNATURE}")
+                    
                     if log.address.lower() == settings.BOT_REGISTRY_CONTRACT_ADDRESS.lower():
-                        # 解析日志数据
-                        bot_id = int.from_bytes(log.topics[1], 'big')
-                        logger.info(f"从日志中获取到机器人ID: {bot_id}")
-                        break
+                        if log.topics[0].hex().replace('0x', '') == BOT_REGISTERED_EVENT_SIGNATURE:
+                            # 解析日志数据
+                            bot_id = int(log.topics[1].hex(), 16)
+                            logger.info(f"从日志中获取到机器人ID: {bot_id}")
+                            break
+                        else:
+                            logger.warning("合约地址匹配，但事件签名不匹配")
+                    else:
+                        logger.warning("合约地址不匹配")
                 
-                if not bot_id:
+                if bot_id is None:
                     logger.error("未从交易日志中找到机器人ID")
                     return Response(
                         {'error': "未从交易日志中找到机器人ID"},
@@ -305,14 +338,26 @@ class BotViewSet(viewsets.ModelViewSet):
                 bot_details = bot_registry_contract.functions.getBotDetails(bot_id).call()
                 logger.info(f"获取到机器人详情: {bot_details}")
                 
-                if not bot_details:
+                # 检查返回值是否为空
+                if not any(bot_details):
                     logger.error("未找到机器人详情")
                     return Response(
                         {'error': "未找到机器人详情"},
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 
-                if not bot_details[6]:  # isActive 字段
+                # 检查机器人是否存在且激活
+                exists = bot_details[6]  # exists 字段
+                is_active = bot_details[5]  # isActive 字段
+                
+                if not exists:
+                    logger.error("机器人不存在")
+                    return Response(
+                        {'error': "机器人不存在"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                if not is_active:
                     logger.error("机器人未激活")
                     return Response(
                         {'error': "机器人未激活"},

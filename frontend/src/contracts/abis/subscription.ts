@@ -1,46 +1,33 @@
 export const SUBSCRIPTION_ABI = [
   {
     inputs: [
+      { name: "user", type: "address" },
       { name: "botId", type: "uint256" },
-      { name: "durationInDays", type: "uint256" },
-      { name: "autoRenew", type: "bool" }
+      { name: "durationInDays", type: "uint256" }
     ],
-    name: "subscribe",
+    name: "subscribeFor",
     outputs: [],
     stateMutability: "nonpayable",
-    type: "function",
+    type: "function"
   },
   {
-    inputs: [{ name: "botId", type: "uint256" }],
-    name: "getBotDetails",
+    inputs: [
+      { name: "user", type: "address" },
+      { name: "botId", type: "uint256" }
+    ],
+    name: "getSubscription",
     outputs: [
-      { name: "ipfsHash", type: "string" },
-      { name: "price", type: "uint256" },
-      { name: "trialTime", type: "uint256" },
-      { name: "name", type: "string" },
-      { name: "description", type: "string" },
-      { name: "developer", type: "address" },
-      { name: "isActive", type: "bool" },
-      { name: "createdAt", type: "uint256" }
+      { name: "startTime", type: "uint32" },
+      { name: "endTime", type: "uint32" },
+      { name: "trialEndTime", type: "uint32" },
+      { name: "lastPayment", type: "uint32" },
+      { name: "status", type: "uint8" }
     ],
     stateMutability: "view",
     type: "function"
   },
   {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: "subscriber", type: "address" },
-      { indexed: true, name: "botId", type: "uint256" },
-      { indexed: false, name: "startTime", type: "uint256" },
-      { indexed: false, name: "endTime", type: "uint256" },
-    ],
-    name: "Subscribed",
-    type: "event",
-  },
-  {
-    inputs: [
-      { name: "botId", type: "uint256" }
-    ],
+    inputs: [{ name: "botId", type: "uint256" }],
     name: "cancel",
     outputs: [],
     stateMutability: "nonpayable",
@@ -52,9 +39,7 @@ export const SUBSCRIPTION_ABI = [
       { name: "botId", type: "uint256" }
     ],
     name: "isTrialActive",
-    outputs: [
-      { name: "", type: "bool" }
-    ],
+    outputs: [{ name: "", type: "bool" }],
     stateMutability: "view",
     type: "function"
   },
@@ -63,14 +48,8 @@ export const SUBSCRIPTION_ABI = [
       { name: "user", type: "address" },
       { name: "botId", type: "uint256" }
     ],
-    name: "getSubscription",
-    outputs: [
-      { name: "startTime", type: "uint256" },
-      { name: "endTime", type: "uint256" },
-      { name: "trialEndTime", type: "uint256" },
-      { name: "lastPayment", type: "uint256" },
-      { name: "status", type: "uint8" }
-    ],
+    name: "isActive",
+    outputs: [{ name: "", type: "bool" }],
     stateMutability: "view",
     type: "function"
   }

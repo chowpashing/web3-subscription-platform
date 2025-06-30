@@ -25,9 +25,9 @@ const PublishBotModal: React.FC<PublishBotModalProps> = ({
   const [publishData, setPublishData] = useState<PublishConfirmResponse['data'] | null>(null);
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
 
-  // 获取 Sepolia 区块浏览器链接
+  // 获取 OP Sepolia 区块浏览器链接
   const getExplorerLink = (hash: string) => {
-    return `https://sepolia.etherscan.io/tx/${hash}`;
+    return `https://sepolia-optimism.etherscan.io/tx/${hash}`;
   };
 
   // 1. 上传到IPFS
@@ -85,13 +85,12 @@ const PublishBotModal: React.FC<PublishBotModalProps> = ({
 
       // 4. 调用合约方法
       const { botData } = response.data;
-      console.log('registerBot params:', botData.ipfsHash, botData.price, botData.trialTime, botData.name, botData.description);
+      console.log('registerBot params:', botData.ipfsHash, botData.price, botData.trialTime, botData.name);
       const tx = await contract.registerBot(
         botData.ipfsHash,
         botData.price,
         botData.trialTime,
-        botData.name,
-        botData.description
+        botData.name
       );
       console.log('registerBot tx:', tx);
       console.log('registerBot tx hash:', tx.hash);
@@ -106,8 +105,9 @@ const PublishBotModal: React.FC<PublishBotModalProps> = ({
       const hash = receipt.transactionHash;
       setTransactionHash(hash);
       setPublishData({
-        ...response.data,
-        transactionHash: hash
+        transaction_hash: hash,
+        ipfs_hash: botData.ipfsHash,
+        ipfs_url: `https://ipfs.io/ipfs/${botData.ipfsHash}`
       });
       
       message.success('Contract call successful');
@@ -124,14 +124,14 @@ const PublishBotModal: React.FC<PublishBotModalProps> = ({
 
   // 3. 确认发布
   const handleConfirmPublish = async () => {
-    if (!publishData || !publishData.transactionHash) {
+    if (!publishData || !publishData.transaction_hash) {
       message.error('Missing transaction hash');
       return;
     }
     
     try {
       setPublishing(true);
-      const response = await confirmPublish(bot.id, publishData.transactionHash);
+      const response = await confirmPublish(bot.id, publishData.transaction_hash);
       if (response.status === 'success') {
         message.success('Publish successful');
         onSuccess(publishData);
@@ -168,13 +168,13 @@ const PublishBotModal: React.FC<PublishBotModalProps> = ({
             <div>
               <p>Transaction hash: {transactionHash}</p>
               <p>
-                You can view the transaction details on the 
+                You can view the transaction details on the {' '}
                 <a 
                   href={getExplorerLink(transactionHash)} 
                   target="_blank" 
                   rel="noopener noreferrer"
                 >
-                  Sepolia block explorer
+                  OP Sepolia block explorer
                 </a>
                 {' '}View transaction details
               </p>

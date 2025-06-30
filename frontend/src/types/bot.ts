@@ -33,7 +33,6 @@ export interface PublishBotData {
   price: string;
   trialTime: number;
   name: string;
-  description: string;
 }
 
 export interface PublishResponse {

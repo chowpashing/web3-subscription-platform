@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-9%%dd_ki+*rq6!d8fwwzethc1n&f#1nqtl6v2h9hnpiy9uxd6y
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']  # 允许所有主机，仅用于开发环境
 
 
 # Application definition
@@ -115,8 +115,12 @@ WSGI_APPLICATION = 'backend_project.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'bot_management',
+        'USER': 'chow',
+        'PASSWORD': '',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
@@ -164,10 +168,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Web3 设置
 WEB3_SETTINGS = {
-    'INFURA_PROJECT_ID': '161ab53b248d4a039e6e6d31908a988b',  # 硬编码的 Infura Project ID
-    'NETWORK': 'sepolia',  # use Sepolia test net
-    'CHAIN_ID': 11155111,  # Sepolia's ID
-    'NETWORK_NAME': 'Sepolia Test Network'  # Blockchain ID
+    'INFURA_PROJECT_ID': '161ab53b248d4a039e6e6d31908a988b',  # Infura Project ID
+    'NETWORK': 'op-sepolia',  # 使用 OP Sepolia 测试网
+    'CHAIN_ID': 11155420,  # OP Sepolia 的 Chain ID
+    'NETWORK_NAME': 'OP Sepolia'  # 网络名称
 }
 
 # IPFS 设置
@@ -175,11 +179,11 @@ IPFS_NODE_URL = 'http://localhost:5001'  # IPFS节点地址
 IPFS_GATEWAY_URL = 'https://ipfs.io'  # IPFS网关地址
 
 # Web3 配置
-WEB3_PROVIDER_URL = 'https://sepolia.infura.io/v3/161ab53b248d4a039e6e6d31908a988b'  # 硬编码的 Web3 提供者 URL
-BOT_REGISTRY_CONTRACT_ADDRESS = '0xff2760ac2b543afB53Eb8C11e1ee326484E76B5E'
-BOT_SUBSCRIPTION_CONTRACT_ADDRESS = '0x0Eee6D0c0fb9B8D99e3551B6a7fE0A42Cfa537e1'
-BOT_PAYMENT_CONTRACT_ADDRESS = '0x521b611EBf9e2f35c5cD82C344245eC6dDA731Fc'
-USDT_CONTRACT_ADDRESS = '0x79C1433c99E6D3CBD8fcdD6957315b8Ed198aDcf'
+WEB3_PROVIDER_URL = 'https://optimism-sepolia.infura.io/v3/161ab53b248d4a039e6e6d31908a988b'  # OP Sepolia RPC URL
+BOT_REGISTRY_CONTRACT_ADDRESS = '0x25418e6f247161681D7a94912B0BA0D9e34c11ED'
+BOT_SUBSCRIPTION_CONTRACT_ADDRESS = '0xCc54d4B377B9feACa48011436193B4DF0588B6e6'
+BOT_PAYMENT_CONTRACT_ADDRESS = '0x59eE55A565680aAb89F3cbEb4a35ce5Aeef9D427'
+USDT_CONTRACT_ADDRESS = '0x325105c248bC4683b0c1CA24a8774cFA142Cc0e0'
 
 # 确保设置了 Web3 提供者
 if not WEB3_PROVIDER_URL or WEB3_PROVIDER_URL == 'https://sepolia.infura.io/v3/your-infura-key':

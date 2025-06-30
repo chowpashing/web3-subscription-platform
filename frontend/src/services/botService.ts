@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { Bot, PublishResponse } from '../types/bot';
 import { ethers } from 'ethers';
-import { BOT_REGISTRY_ABI } from '../contracts/abi';
+
 
 // API基础URL
 const API_BASE_URL = '/api';  // 改为相对路径，让开发服务器代理处理
@@ -161,6 +161,8 @@ export const getPublishedBots = async (): Promise<Bot[]> => {
     throw error;
   }
 };
+
+
 
 const getAuthHeader = () => {
   const token = localStorage.getItem('token');

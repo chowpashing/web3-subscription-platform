@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./blockchain:/app/blockchain
+    environment:
+      - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=backend_project.settings
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/bot_management
+    depends_on:
+      - db
+    networks:
+      web3-network:
+        ipv4_address: 172.20.0.2
+    command: python manage.py runserver 0.0.0.0:8000
+
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=bot_management
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    networks:
+      web3-network:
+        ipv4_address: 172.20.0.3
+
+networks:
+  web3-network:
+    external: true
+    name: web3-network
+
+volumes:
+  postgres_data: 

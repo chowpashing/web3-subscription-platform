@@ -86,7 +86,7 @@ def verify_signature(wallet_address, message, signature):
         print(f"Signature verification error: {str(e)}")
         traceback.print_exc()
         return False
-
+    
 # Web3 钱包登录
 class Web3LoginView(APIView):
     def post(self, request):

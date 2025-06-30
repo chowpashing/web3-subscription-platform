@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { message, Table } from 'antd';
 import axios from '../utils/axios';
 import { ethers } from 'ethers';
-import { BOT_SUBSCRIPTION_CONTRACT_ADDRESS } from '../contracts/addresses';
+import { NEW_BOT_SUBSCRIPTION_CONTRACT_ADDRESS, switchToOpSepolia, NETWORK_CONFIG } from '../contracts/addresses';
 import { SUBSCRIPTION_ABI } from '../contracts/abis/subscription';
 
 
@@ -45,11 +45,21 @@ function UserSubscription() {
 
   const handleCancelSubscription = async (botId: number, transactionHash: string) => {
     try {
+      // 确保连接到 OP Sepolia 网络
+      await switchToOpSepolia();
+      
       const provider = new ethers.providers.Web3Provider((window as any).ethereum);
       await provider.send('eth_requestAccounts', []);
       const signer = provider.getSigner();
+      
+      // 检查网络
+      const network = await provider.getNetwork();
+      if (network.chainId !== NETWORK_CONFIG.chainId) {
+        throw new Error('请切换到 OP Sepolia 网络');
+      }
+      
       const subscriptionContract = new ethers.Contract(
-        BOT_SUBSCRIPTION_CONTRACT_ADDRESS,
+        NEW_BOT_SUBSCRIPTION_CONTRACT_ADDRESS,
         SUBSCRIPTION_ABI,
         signer
       );

@@ -1,7 +1,11 @@
 import { ethers } from 'ethers';
 import axios from 'axios';
-import { USDT_CONTRACT_ADDRESS, BOT_PAYMENT_CONTRACT_ADDRESS } from '../contracts/addresses';
-import { SiweMessage } from 'siwe';
+import { 
+  NEW_USDT_CONTRACT_ADDRESS as USDT_CONTRACT_ADDRESS, 
+  BOT_PAYMENT_CONTRACT_ADDRESS, 
+  OP_SEPOLIA_CONFIG as NETWORK_CONFIG,
+} from '../contracts/addresses';
+
 
 // API基础URL
 const API_BASE_URL = "http://localhost:8000/api";
@@ -10,7 +14,10 @@ const API_BASE_URL = "http://localhost:8000/api";
 const USDT_ABI = [
   "function balanceOf(address) view returns (uint256)",
   "function allowance(address,address) view returns (uint256)",
-  "function approve(address,uint256) returns (bool)"
+  "function approve(address,uint256) returns (bool)",
+  "function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external",
+  "function nonces(address owner) external view returns (uint256)",
+  "function DOMAIN_SEPARATOR() external view returns (bytes32)"
 ];
 
 // 请求用户连接Web3钱包
@@ -38,10 +45,40 @@ export const checkUSDTBalance = async (address: string) => {
   try {
     const provider = new ethers.providers.Web3Provider(window.ethereum as ethers.providers.ExternalProvider);
     const contract = new ethers.Contract(USDT_CONTRACT_ADDRESS, USDT_ABI, provider);
+    
+    console.log('正在查询USDT余额:', {
+      walletAddress: address,
+      contractAddress: USDT_CONTRACT_ADDRESS,
+      abi: USDT_ABI
+    });
+
+    // 确保钱包已连接到正确的网络
+    const network = await provider.getNetwork();
+    if (network.chainId !== NETWORK_CONFIG.chainId) {
+      throw new Error(`请切换到 ${NETWORK_CONFIG.chainName}`);
+    }
+
+    // 检查合约地址是否有代码
+    const code = await provider.getCode(USDT_CONTRACT_ADDRESS);
+    if (code === '0x') {
+      throw new Error('USDT合约地址无效或在当前网络上不存在');
+    }
+
     const balance = await contract.balanceOf(address);
+    console.log('USDT余额查询成功:', ethers.utils.formatUnits(balance, 6));
     return ethers.utils.formatUnits(balance, 6); // USDT有6位小数
   } catch (error) {
-    console.error('获取USDT余额失败:', error);
+    console.error('获取USDT余额失败:', {
+      error,
+      walletAddress: address,
+      contractAddress: USDT_CONTRACT_ADDRESS
+    });
+    
+    if (error instanceof Error) {
+      if (error.message.includes('call revert exception')) {
+        throw new Error('USDT合约调用失败，请确保在正确的网络上并使用有效的合约地址');
+      }
+    }
     throw new Error('获取USDT余额失败');
   }
 };
@@ -87,8 +124,7 @@ export const loginWithWallet = async () => {
     // 使用钱包签名
     const signature = await signer.signMessage(message);
     console.log('签名结果:', signature);
-    
-    // 发送登录请求
+        // 发送登录请求
     const requestData = {
       message,
       signature,
@@ -139,5 +175,40 @@ export const bindEmailAndRole = async (walletAddress: string, email: string, rol
   } catch (error) {
     console.error('绑定邮箱和角色失败:', error);
     throw new Error('绑定邮箱和角色失败');
+  }
+};
+
+// 检测是否支持 EIP-2612
+export const checkEIP2612Support = async (tokenAddress: string): Promise<boolean> => {
+  try {
+    const provider = new ethers.providers.Web3Provider(window.ethereum as ethers.providers.ExternalProvider);
+    const signer = provider.getSigner();
+    const userAddress = await signer.getAddress();
+    
+    // 使用已有的USDT_ABI
+    const contract = new ethers.Contract(tokenAddress, USDT_ABI, provider);
+
+    // 检查是否支持EIP-2612
+    const isSupported = await Promise.all([
+      contract.nonces(userAddress).then(() => true).catch(() => false),
+      contract.DOMAIN_SEPARATOR().then(() => true).catch(() => false),
+      Promise.resolve(contract.interface.getFunction('permit') !== null)
+    ]);
+
+    const [hasNonces, hasDomainSeparator, hasPermit] = isSupported;
+    
+    console.log('EIP-2612检查结果:', {
+      tokenAddress,
+      hasNonces,
+      hasDomainSeparator,
+      hasPermit,
+      network: (await provider.getNetwork()).name
+    });
+
+    // 所有方法都必须支持
+    return hasNonces && hasDomainSeparator && hasPermit;
+  } catch (error) {
+    console.error('检查EIP-2612支持时发生错误:', error);
+    return false;
   }
 };
